@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Firebase PDF Upload Example</title>
+</head>
+
+<body>
+    <h1>Firebase PDF Upload (Auth + Firestore)</h1>
+
+    <!-- Auth Buttons -->
+    <div id="auth-section">
+        <button id="login-btn">Sign in with Google</button>
+        <button id="logout-btn" style="display: none;">Sign Out</button>
+        <p id="user-info"></p>
+    </div>
+
+    <!-- PDF Upload -->
+    <div id="upload-section" style="display: none;">
+        <input type="file" id="pdfFile" accept="application/pdf" />
+        <button id="saveToFirestoreBtn">Save File Info to Firestore</button>
+    </div>
+
+    <p id="status"></p>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+
+    <script>
+        // Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD9symDyc_HepXznCnyLJndSy0Ysy8rcMA",
+            authDomain: "eduacademic-346df.firebaseapp.com",
+            projectId: "eduacademic-346df",
+            storageBucket: "eduacademic-346df.appspot.com", // ✅ fixed
+            messagingSenderId: "687403410345",
+            appId: "1:687403410345:web:6632c0d2caed415be8dab8"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // DOM elements
+        const loginBtn = document.getElementById("login-btn");
+        const logoutBtn = document.getElementById("logout-btn");
+        const userInfo = document.getElementById("user-info");
+        const uploadSection = document.getElementById("upload-section");
+        const saveBtn = document.getElementById("saveToFirestoreBtn");
+
+        // Sign in with Google
+        loginBtn.onclick = () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider);
+        };
+
+        // Sign out
+        logoutBtn.onclick = () => auth.signOut();
+
+        // Auth state listener
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                userInfo.textContent = `Logged in as ${user.displayName}`;
+                loginBtn.style.display = "none";
+                logoutBtn.style.display = "inline-block";
+                uploadSection.style.display = "block";
+            } else {
+                userInfo.textContent = "Not signed in";
+                loginBtn.style.display = "inline-block";
+                logoutBtn.style.display = "none";
+                uploadSection.style.display = "none";
+            }
+        });
+
+        // Save file name to Firestore
+        saveBtn.onclick = async () => {
+            const fileInput = document.getElementById("pdfFile");
+            const file = fileInput.files[0];
+            if (!file) return alert("Select a PDF file first.");
+
+            const user = auth.currentUser;
+            if (!user) return alert("You must be logged in.");
+
+            await db.collection("uploads").add({
+                uid: user.uid,
+                name: file.name,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            document.getElementById("status").textContent = `Saved "${file.name}" to Firestore.`;
+        };
+    </script>
+</body>
+
+</html>
